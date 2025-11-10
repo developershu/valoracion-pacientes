@@ -3,63 +3,71 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
+use App\Models\Valoracion;
+use App\Models\Paciente;
+use App\Models\Turno;
+use App\Models\ResumenPaciente;
 
 class TurnoController extends Controller
 {
     public function index(Request $request)
     {
-        // Obtener filtro por documento
+        // Verificar si es búsqueda por documento o por estado
+        $tipoeBusqueda = $request->input('tipo_busqueda', 'documento');
         $documento = $request->input('documento');
-        $turnos = [];
-        $paciente = null;
+        $resumenPaciente = null;
+        $resultadosEstado = null;
 
-        if ($documento) {
-            // Buscar paciente por documento en la API externa usando autenticación básica
-            $respPaciente = Http::withBasicAuth('apiuser', 'Apiuser2025')
-                ->get('https://universitario.alephoo.com/api/v3/admin/personas', [
-                    'filter[documento]' => $documento
-                ]);
-            $json = $respPaciente->json();
-            $paciente = null;
-            if (
-                $respPaciente->ok() &&
-                isset($json['data']) &&
-                is_array($json['data']) &&
-                !empty($json['data']) &&
-                isset($json['data'][0]) &&
-                is_array($json['data'][0]) &&
-                array_key_exists('id', $json['data'][0])
-            ) {
-                $paciente = $json['data'][0];
-                // Buscar turnos del paciente (limitando la cantidad)
-                $respTurnos = Http::withBasicAuth('apiuser', 'Apiuser2025')
-                    ->get('https://universitario.alephoo.com/api/v3/admision/turnos', [
-                        'persona_id' => $paciente['id'],
-                        'limit' => 10
-                    ]);
-                $turnos = $respTurnos->ok() ? $respTurnos->json() : [];
-            }
-            // Depuración: mostrar respuesta cruda
-            // dd($json, $paciente ?? null, $turnos);
+        if ($tipoeBusqueda === 'documento' && $documento) {
+            // Búsqueda por documento específico
+            $resumenPaciente = ResumenPaciente::obtenerResumenPorDocumento($documento);
+        } elseif ($tipoeBusqueda === 'estado') {
+            // Ahora la pestaña 'Por Estado' muestra pacientes con valoración más baja
+            // Usamos parámetros si el usuario los pasó (aunque la vista los muestra deshabilitados)
+            $fechaDesde = $request->input('fecha_desde');
+            $fechaHasta = $request->input('fecha_hasta');
+            $minTurnos = $request->input('min_turnos', 3);
+
+            $resultadosEstado = ResumenPaciente::buscarPorValoracionBaja(
+                $fechaDesde,
+                $fechaHasta,
+                $minTurnos,
+                100 // límite
+            );
         }
 
-        return view('turnos', compact('turnos', 'paciente', 'documento'));
+        // Si no se cargaron resultados por estado (p. ej. se visitó la página sin params),
+        // cargamos la lista de valoración baja por defecto para que la pestaña la muestre.
+        if (is_null($resultadosEstado)) {
+            $resultadosEstado = ResumenPaciente::buscarPorValoracionBaja(null, null, 3, 100);
+        }
+
+        return view('turnos', compact('resumenPaciente', 'documento', 'resultadosEstado', 'tipoeBusqueda'));
     }
 
     public function show($id)
     {
-        // Obtener detalle de turno desde la API externa
-        $response = Http::get('https://universitario.alephoo.com/api/v3/admision/turnos/' . $id);
-        $turno = $response->ok() ? $response->json() : null;
-        return view('detalle_turno', compact('turno'));
-    }
+        try {
+            // Intentar encontrar un turno por ID
+            $turno = Turno::with('paciente', 'valoracion')->find($id);
+            if ($turno) {
+                return view('detalle_turno', compact('turno'));
+            }
 
-    public function sync()
-    {
-        // Aquí podrías guardar los turnos en la base local si lo deseas
-        $response = Http::get('https://universitario.alephoo.com/api/v3/admision/turnos');
-        // Lógica para guardar en base local...
-        return back()->with('status', 'Turnos sincronizados');
+            // Si no se encontró un turno, tratamos el parámetro como documento (DNI)
+            $documento = $id;
+            $resumenPaciente = ResumenPaciente::obtenerResumenPorDocumento($documento);
+
+            if (!$resumenPaciente) {
+                return redirect()->route('turnos.index')->with('error', 'Paciente no encontrado.');
+            }
+
+            // Mostrar vista específica de paciente
+            return view('paciente_detalle', compact('resumenPaciente'));
+
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Error en TurnoController@show: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            return redirect()->route('turnos.index')->with('error', 'Ocurrió un error al cargar el paciente. Revisa los logs.');
+        }
     }
 }

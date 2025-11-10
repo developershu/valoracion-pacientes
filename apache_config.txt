@@ -1,0 +1,17 @@
+# Configuración Virtual Host para Apache
+# Agregar esto al archivo httpd-vhosts.conf de Apache
+
+<VirtualHost 172.22.117.159:80>
+    DocumentRoot "c:/xampp/htdocs/valoracion/public"
+    ServerName valoracion.local
+    ServerAlias 172.22.117.159
+    
+    <Directory "c:/xampp/htdocs/valoracion/public">
+        AllowOverride All
+        Require all granted
+        DirectoryIndex index.php
+    </Directory>
+    
+    ErrorLog "logs/valoracion_error.log"
+    CustomLog "logs/valoracion_access.log" common
+</VirtualHost>

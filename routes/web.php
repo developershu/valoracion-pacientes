@@ -6,7 +6,7 @@ use App\Http\Controllers\TurnoController;
 use App\Http\Controllers\ValoracionController;
 
 Route::get('/', function () {
-    return view('welcome');
+    return redirect()->route('login');
 });
 
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
@@ -17,6 +17,5 @@ Route::middleware('auth')->group(function () {
     Route::get('/', [TurnoController::class, 'index'])->name('turnos.index');
     Route::get('/turnos', [TurnoController::class, 'index']);
     Route::get('/turnos/{id}', [TurnoController::class, 'show'])->name('turnos.show');
-    Route::post('/turnos/sync', [TurnoController::class, 'sync'])->name('turnos.sync');
     Route::post('/turnos/{id}/valorar', [ValoracionController::class, 'store'])->name('turnos.valorar');
 });

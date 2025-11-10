@@ -13,14 +13,30 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     /**
+     * Especifica la conexión de base de datos para este modelo
+     */
+    protected $connection = 'mysql_real';
+
+    /**
+     * Especifica la tabla a usar (tabla del sistema hospitalario)
+     */
+    protected $table = 'usuario';
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
      */
     protected $fillable = [
-        'name',
-        'email',
+        'username',
         'password',
+        'personal_id',
+        'created_by',
+        'modified_by',
+        'blocked_account',
+        'borrado_logico',
+        'cambiar_password',
+        'log_attempt',
     ];
 
     /**
@@ -30,7 +46,7 @@ class User extends Authenticatable
      */
     protected $hidden = [
         'password',
-        'remember_token',
+        'codigo_ad_hoc',
     ];
 
     /**
@@ -41,8 +57,38 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
+            'deleted_at' => 'datetime',
+            'last_login' => 'datetime',
             'password' => 'hashed',
+            'blocked_account' => 'boolean',
+            'borrado_logico' => 'boolean',
+            'cambiar_password' => 'boolean',
         ];
+    }
+
+    /**
+     * Obtener el nombre para mostrar
+     */
+    public function getNameAttribute()
+    {
+        return $this->username;
+    }
+
+    /**
+     * Obtener email (no existe en esta tabla, usar username)
+     */
+    public function getEmailAttribute()
+    {
+        return $this->username . '@hospital.uncu.edu.ar';
+    }
+
+    /**
+     * Override del método para verificar si el usuario está activo
+     */
+    public function isActive()
+    {
+        return !$this->blocked_account && !$this->borrado_logico && is_null($this->deleted_at);
     }
 }

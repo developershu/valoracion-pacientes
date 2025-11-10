@@ -15,12 +15,12 @@ Una aplicación llamada “valoración”  que puntee con estrellas del 1 al 5 l
 ## 4\. Tecnologías y Plataforma
 •	Backend/Base de Datos: Firebase (Firestore, Authentication).
 •	Frontend: Es una aplicación web y necesito que usemos Bootstrap
-•	API Externa:  
-Url: https://universitario.alephoo.com/
-Endpoint de especialidades: /api/v3/admin/especialidades
-Endpoint de profesionales: /api/v3/admin/profesionales
-Endpoint de turnos: /api/v3/admision/turnos
-Endpoint de personas: /api/v3/admin/personas
+•	Conexion con la base de datos
+    powerbihu.servidorvirtual.com.ar
+    puerto: 43306
+    usr:  reportes
+    clave:  readonly2024
+## 5\. Estructura de tTablas en Base de datos
 
 
 ## 6\. Diseño y Experiencia de Usuario (UI/UX)

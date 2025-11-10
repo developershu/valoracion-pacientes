@@ -15,11 +15,14 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
-
-        User::factory()->create([
-            'name' => 'Test User',
-            'email' => 'test@example.com',
+        // Crear usuario administrador específico para Guillermo
+        $this->call([
+            AdminUserSeeder::class,
         ]);
+        
+        $this->command->info('✅ Sistema configurado para autenticación con salutte2');
+        $this->command->info('ℹ️  Los usuarios deben autenticarse con su username del sistema hospitalario');
+        $this->command->info('📝 Ejemplos: admin, carlos.estrada, cristian.reta, fabiana.colucci');
+        $this->command->info('👤 Usuario admin creado: guillermo.bermejo');
     }
 }
